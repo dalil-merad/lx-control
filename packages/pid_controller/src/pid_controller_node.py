@@ -94,6 +94,7 @@ class PIDControllerNode(DTROS):
             self.publishCmd(0, 0)
             self.STOP = True
             self.log("STOP")
+            self.controller.SetGains(reset_integral=True)
             return
 
         PID_parameters = PID_parameters.split(";")

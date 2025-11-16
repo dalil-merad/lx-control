@@ -42,16 +42,39 @@ class PIDController():
         # as well as self_prev_int_heading to track the integral term
         # self.prev_e_heading the previous error. But note that you
         # should be the one to update them also.
-
+    
         v = v_ref
-        omega = np.random.uniform(-8.0, 8.0)
+
+        theta_err = theta_ref - theta_curr
+        print(f'Current theta = {theta_curr}')
+        print(f'error = {theta_err}')
+
+        #Proportional
+        prop = self.kp * theta_err
+
+        #Integral
+        new_int_error_heading = self.prev_int_heading + theta_err * delta_t
+        print(f'Integral Error: {new_int_error_heading}\n')
+        self.prev_int_heading = new_int_error_heading
+        integral = self.ki * (new_int_error_heading)
+
+        #Derivative
+        de_dt = (theta_err - self.prev_e_heading)/ delta_t
+        deriv = self.kd* de_dt
+        
+        self.prev_e_heading = theta_err
+
+        omega = prop + integral + deriv
+
+        print(f'Kp:{self.kp}\n Ki:{self.ki}\nKd:{self.kd}')
+
         return v, omega
 
     def OffsetControl(self,
                       v_ref: float,
                       y_ref: float,
                       y_curr: float,
-                      delta_t: float
+                      delta_t: float,
                       ) -> Tuple[float, float]:
         """
         PID performing lateral offset control.
@@ -73,12 +96,43 @@ class PIDController():
         # self.prev_e_offset the previous error. But note that you
         # should be the one to update them also.
 
-        omega = np.random.uniform(-8.0, 8.0)
         v = v_ref
+
+        y_err = y_ref - y_curr
+        #print(f'Current y= {y_curr}')
+        #print(f'error = {y_err}')
+
+        #Proportional
+        prop = self.kp * y_err
+
+        #Integral
+        new_int_error_offset= self.prev_int_offset + y_err * delta_t
+        #print(f'Integral Error: {new_int_error_offset}')
+        self.prev_int_offset = new_int_error_offset
+        integral = self.ki * (new_int_error_offset)
+
+        #Derivative
+        de_dt = (y_err - self.prev_e_offset)/ delta_t
+        #print(f'Derivative Error: {de_dt}')
+        deriv = self.kd* de_dt
+        
+        self.prev_e_offset = y_err
+
+        omega = prop + integral + deriv
+
+        #print(f'Kp:{self.kp}\n Ki:{self.ki}\nKd:{self.kd}\n')
+
+
         return v, omega
 
-    def SetGains(self, kp: float, ki: float, kd: float) -> None:
+    def SetGains(self, kp: float = None, ki: float = None, kd: float = None, reset_integral=False) -> None:
         # Set the PID gains
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
+        if kp is not None and ki is not None and kd is not None and not reset_integral:
+            self.kp = kp
+            self.ki = ki
+            self.kd = kd
+        elif reset_integral:
+            self.prev_int_heading = 0.0
+            self.prev_int_offset = 0.0
+            self.prev_e_heading = 0.0
+            self.prev_e_offset = 0.0
